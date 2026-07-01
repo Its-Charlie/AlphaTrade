@@ -74,13 +74,23 @@ st.set_page_config(
 )
 
 st.title("📈 AlphaTrade")
-st.subheader("AI Powered Stock Prediction System")
+st.subheader("AI Powered Multi-Market Stock Prediction System")
 
 ticker = st.text_input(
     "Enter Stock Symbol",
     "AAPL"
 )
 
+st.caption(
+    "Examples: AAPL, MSFT, NVDA, RELIANCE.NS, TCS.NS, INFY.NS"
+)
+if (
+    not ticker.endswith('.NS')
+    and not ticker.endswith('.BO')
+    and ticker.isalpha()
+    and ticker.upper() == ticker
+):
+    ticker = ticker + '.NS'
 if st.button("Predict"):
 
     try:
@@ -96,6 +106,29 @@ if st.button("Predict"):
             st.error("Invalid stock symbol.")
             st.stop()
 
+        # Get stock info
+        stock = yf.Ticker(ticker)
+
+        try:
+            info = stock.fast_info
+            currency = info.get('currency', 'USD')
+        except:
+            currency = 'USD'
+
+        # Currency symbol
+        if currency == 'USD':
+            currency_symbol = '$'
+        elif currency == 'INR':
+            currency_symbol = '₹'
+        elif currency == 'GBP':
+            currency_symbol = '£'
+        elif currency == 'EUR':
+            currency_symbol = '€'
+        elif currency == 'JPY':
+            currency_symbol = '¥'
+        else:
+            currency_symbol = currency + ' '
+
         # Fix MultiIndex issue
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.get_level_values(0)
@@ -110,15 +143,21 @@ if st.button("Predict"):
         current_price = float(df['Close'].iloc[-1])
         latest_date = df.index[-1]
 
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
 
         with col1:
             st.metric(
                 "Current Price",
-                f"${current_price:.2f}"
+                f"{currency_symbol}{current_price:.2f}"
             )
 
         with col2:
+            st.metric(
+                "Currency",
+                currency
+            )
+
+        with col3:
             st.metric(
                 "Last Updated",
                 str(latest_date.date())
