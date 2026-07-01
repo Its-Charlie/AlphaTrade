@@ -1,0 +1,575 @@
+# AlphaTrade Project – Development Log and Technical Notes
+
+## Project Objective
+
+The goal of the AlphaTrade project is to predict the next day's stock price movement (UP/DOWN) using Machine Learning and Deep Learning techniques on historical stock market data.
+
+---
+
+# Phase 1: Data Collection and Exploratory Data Analysis (EDA)
+
+## Objective
+
+Collect historical stock market data and understand its patterns before applying Machine Learning.
+
+## Dataset Source
+
+* Data Source: Yahoo Finance API
+* Python Library: yfinance
+* Stock Used: Apple Inc. (AAPL)
+
+## Libraries Used
+
+* yfinance
+* pandas
+* numpy
+* matplotlib
+* seaborn
+
+---
+
+## Tasks Performed
+
+### 1. Data Collection
+
+Downloaded historical stock data using:
+
+```python
+yf.download()
+```
+
+Collected features:
+
+* Open
+* High
+* Low
+* Close
+* Volume
+
+---
+
+### 2. Data Cleaning
+
+Performed:
+
+* Missing value detection
+* Duplicate checking
+* Data type verification
+
+Methods used:
+
+* df.info()
+* df.isnull()
+* df.duplicated()
+
+---
+
+### 3. Exploratory Data Analysis
+
+Created:
+
+* Closing price trend graph
+* Daily returns
+* Volatility analysis
+* Correlation heatmap
+
+Purpose:
+
+* Understand stock behavior
+* Identify feature relationships
+* Visualize market trends
+
+---
+
+## Technical Indicators Created
+
+### Trend Indicators
+
+* SMA_20
+* SMA_50
+* EMA_20
+* EMA_50
+
+### Momentum Indicators
+
+* RSI
+* MACD
+* Signal_Line
+
+### Volatility Indicators
+
+* Volatility
+* Bollinger Bands
+
+### Return Indicators
+
+* Daily_Return
+
+---
+
+## Problems Faced During Phase 1
+
+### Problem 1
+
+Issue:
+
+```text
+Import "yfinance" could not be resolved
+```
+
+Cause:
+
+* Wrong Python environment selected.
+
+Solution:
+
+* Activated project virtual environment.
+* Selected correct Jupyter kernel.
+
+---
+
+### Problem 2
+
+Issue:
+
+```text
+NameError: df is not defined
+```
+
+Cause:
+
+* Dataframe was not loaded before analysis.
+
+Solution:
+
+* Re-ran data loading cell.
+
+---
+
+### Problem 3
+
+Issue:
+
+```text
+ValueError:
+Cannot set a DataFrame with multiple columns
+```
+
+Cause:
+
+* Yahoo Finance returned MultiIndex columns.
+
+Solution:
+
+* Flattened MultiIndex columns.
+
+---
+
+# Phase 2: Machine Learning Baseline
+
+## Objective
+
+Predict whether the next day's stock price will increase or decrease.
+
+---
+
+## Target Variable Creation
+
+Created binary classification target:
+
+```text
+1 = Price goes UP tomorrow
+0 = Price goes DOWN tomorrow
+```
+
+Implemented using:
+
+```python
+df['Target'] =
+(df['Close'].shift(-1) > df['Close'])
+```
+
+---
+
+## Initial Feature Set
+
+Used 11 features:
+
+* Close
+* Volume
+* SMA_20
+* SMA_50
+* EMA_20
+* EMA_50
+* Daily_Return
+* Volatility
+* RSI
+* MACD
+* Signal_Line
+
+---
+
+## Data Splitting
+
+Initially used:
+
+```python
+train_test_split()
+```
+
+Later discovered this was incorrect for stock prediction.
+
+---
+
+## Important Lesson Learned
+
+Stock prediction is a:
+
+```text
+Time Series Forecasting Problem
+```
+
+and NOT a traditional classification problem.
+
+Corrected using:
+
+```python
+Chronological Split
+```
+
+Example:
+
+```text
+Past Data -> Training
+Future Data -> Testing
+```
+
+---
+
+# Models Trained
+
+## 1. Logistic Regression
+
+Purpose:
+
+* Establish baseline performance.
+
+Result:
+
+```text
+Accuracy ≈ 53.8%
+```
+
+Observation:
+
+* Model was too simple for stock market patterns.
+
+---
+
+## 2. Random Forest
+
+Purpose:
+
+* Capture nonlinear market relationships.
+
+Result:
+
+```text
+Accuracy ≈ 54.1%
+```
+
+Observation:
+
+* Best-performing model.
+
+---
+
+## 3. XGBoost
+
+Purpose:
+
+* Test boosting-based approach.
+
+Result:
+
+```text
+Accuracy ≈ 50.7%
+```
+
+Observation:
+
+* Underperformed due to small dataset and noisy financial data.
+
+---
+
+# Phase 2.5: Advanced Feature Engineering
+
+## Objective
+
+Create additional features to improve prediction accuracy.
+
+---
+
+## Features Added
+
+### Lag Features
+
+* Lag_1
+* Lag_2
+* Lag_3
+* Lag_5
+
+Purpose:
+
+* Capture previous market behavior.
+
+---
+
+### Momentum Features
+
+* Momentum_5
+* Momentum_10
+
+Purpose:
+
+* Measure trend strength.
+
+---
+
+### Rolling Statistics
+
+* Rolling_Mean_5
+* Rolling_STD_5
+
+Purpose:
+
+* Measure local trend and volatility.
+
+---
+
+### Return Features
+
+* Return_5
+* Return_10
+
+Purpose:
+
+* Measure percentage price changes.
+
+---
+
+## Result
+
+Performance decreased:
+
+```text
+Random Forest:
+54.1% -> 50.0%
+```
+
+---
+
+## Important Lesson Learned
+
+More features do NOT always improve performance.
+
+This phenomenon is called:
+
+```text
+Feature Overfitting
+```
+
+---
+
+# Phase 2.6: Feature Selection
+
+## Objective
+
+Keep only the most important features.
+
+---
+
+## Feature Importance Analysis
+
+Most important features:
+
+* Daily_Return
+* Rolling_STD_5
+* Volatility
+* Volume
+* RSI
+* Momentum_10
+
+Least important features:
+
+* SMA_20
+* EMA_20
+* Rolling_Mean_5
+
+---
+
+## Result
+
+Performance decreased again:
+
+```text
+Random Forest:
+50.0% -> 48.9%
+```
+
+---
+
+## Important Lesson Learned
+
+Feature importance ranking does not always guarantee better predictive performance.
+
+---
+
+# Best Model Achieved
+
+```text
+Algorithm:
+Random Forest
+
+Feature Set:
+Original 11 Features
+
+Accuracy:
+54.11%
+```
+
+---
+
+# Major Technical Lessons Learned
+
+1. Stock prediction is a Time Series problem.
+2. Chronological splitting is mandatory.
+3. More features can reduce accuracy.
+4. Feature engineering requires experimentation.
+5. Random Forest can outperform XGBoost on noisy financial data.
+6. Feature importance does not guarantee predictive power.
+7. Machine Learning projects require iterative experimentation.
+
+---
+
+# Project Status
+
+Completed:
+
+* Data Collection
+* Data Cleaning
+* Exploratory Data Analysis
+* Technical Indicators
+* Logistic Regression
+* Random Forest
+* XGBoost
+* Advanced Feature Engineering
+* Feature Selection
+
+Next Phase:
+
+* Deep Learning using LSTM
+* Backtesting
+* Deployment
+
+Problem:
+LSTM produced NaN loss values.
+
+Cause:
+Technical indicators generated missing values
+(SMA, RSI, Volatility, Returns).
+
+Solution:
+Applied df.dropna() before scaling and sequence creation.
+
+Lesson:
+Deep learning models cannot handle NaN values, unlike some classical ML workflows.
+
+# Phase 3: Deep Learning (LSTM)
+
+## Objective
+
+Apply deep learning techniques to capture temporal patterns in stock market data.
+
+---
+
+## Why LSTM?
+
+Traditional machine learning models treat each observation independently.
+
+LSTM networks can learn sequential dependencies:
+
+Day 1 → Day 2 → Day 3 → ... → Predict Tomorrow
+
+---
+
+## LSTM Architecture
+
+Input:
+
+* 10 previous trading days
+* 11 features
+
+Network:
+
+* LSTM (64 units)
+* Dropout (20%)
+* LSTM (32 units)
+* Dropout (20%)
+* Dense (Sigmoid)
+
+---
+
+## Problems Faced
+
+### Problem 1
+
+Issue:
+loss = NaN
+
+Cause:
+The dataset contained NaN values generated by:
+
+* SMA indicators
+* RSI
+* Volatility
+* Daily Returns
+
+Solution:
+Applied:
+
+```python
+df = df.dropna()
+```
+
+before scaling and sequence creation.
+
+---
+
+## Final LSTM Performance
+
+Validation Accuracy:
+
+54.14%
+
+---
+
+## Important Observation
+
+LSTM only marginally outperformed Random Forest.
+
+This indicates that:
+
+* Stock market prediction is highly noisy.
+* Deep learning does not always outperform classical machine learning.
+* More complex models do not guarantee better results.
+
+---
+
+## Final Champion Model
+
+Algorithm:
+LSTM
+
+Accuracy:
+54.14%
