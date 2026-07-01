@@ -69,45 +69,69 @@ def create_features(df):
 
 st.set_page_config(
     page_title="AlphaTrade",
-    page_icon="📈",
     layout="wide"
 )
 
-st.title("📈 AlphaTrade")
+st.title("AlphaTrade")
 st.subheader("AI Powered Multi-Market Stock Prediction System")
 
 ticker = st.text_input(
-    "Enter Stock Symbol",
-    "AAPL"
+    "Enter Stock Symbol"
 )
 
 st.caption(
-    "Examples: AAPL, MSFT, NVDA, RELIANCE.NS, TCS.NS, INFY.NS"
+    "Examples: AAPL, MSFT, NVDA, RELIANCE, TCS, INFY, JIOFIN"
 )
-if (
-    not ticker.endswith('.NS')
-    and not ticker.endswith('.BO')
-    and ticker.isalpha()
-    and ticker.upper() == ticker
-):
-    ticker = ticker + '.NS'
+
 if st.button("Predict"):
 
     try:
 
-        # Download stock data
+        original_ticker = ticker.strip().upper()
+
+        # ---------------- AUTO MARKET DETECTION ----------------
+
+        # Try original symbol
         df = yf.download(
-            ticker,
+            original_ticker,
             start="2020-01-01",
             progress=False
         )
 
+        detected_symbol = original_ticker
+
+        # Try NSE
+        if df.empty:
+            temp = yf.download(
+                original_ticker + ".NS",
+                start="2020-01-01",
+                progress=False
+            )
+
+            if not temp.empty:
+                df = temp
+                detected_symbol = original_ticker + ".NS"
+
+        # Try BSE
+        if df.empty:
+            temp = yf.download(
+                original_ticker + ".BO",
+                start="2020-01-01",
+                progress=False
+            )
+
+            if not temp.empty:
+                df = temp
+                detected_symbol = original_ticker + ".BO"
+
+        # Final validation
         if df.empty:
             st.error("Invalid stock symbol.")
             st.stop()
 
-        # Get stock info
-        stock = yf.Ticker(ticker)
+        # ---------------- STOCK INFO ----------------
+
+        stock = yf.Ticker(detected_symbol)
 
         try:
             info = stock.fast_info
@@ -115,35 +139,35 @@ if st.button("Predict"):
         except:
             currency = 'USD'
 
-        # Currency symbol
-        if currency == 'USD':
-            currency_symbol = '$'
-        elif currency == 'INR':
-            currency_symbol = '₹'
-        elif currency == 'GBP':
-            currency_symbol = '£'
-        elif currency == 'EUR':
-            currency_symbol = '€'
-        elif currency == 'JPY':
-            currency_symbol = '¥'
-        else:
-            currency_symbol = currency + ' '
+        # Currency symbols
+        currency_symbols = {
+            'USD': '$',
+            'INR': '₹',
+            'GBP': '£',
+            'EUR': '€',
+            'JPY': '¥'
+        }
+
+        currency_symbol = currency_symbols.get(
+            currency,
+            currency + " "
+        )
 
         # Fix MultiIndex issue
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.get_level_values(0)
 
-        # Generate features
-        df = create_features(df)
+        # ---------------- FEATURE ENGINEERING ----------------
 
-        # Remove NaN values
+        df = create_features(df)
         df = df.dropna()
 
-        # Current stock information
+        # ---------------- CURRENT INFO ----------------
+
         current_price = float(df['Close'].iloc[-1])
         latest_date = df.index[-1]
 
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
 
         with col1:
             st.metric(
@@ -159,34 +183,42 @@ if st.button("Predict"):
 
         with col3:
             st.metric(
+                "Detected Symbol",
+                detected_symbol
+            )
+
+        with col4:
+            st.metric(
                 "Last Updated",
                 str(latest_date.date())
             )
 
-        # Prediction
+        # ---------------- PREDICTION ----------------
+
         latest_data = df[features].iloc[-1:]
 
         prediction = model.predict(
             latest_data
         )[0]
 
-        st.subheader("📊 AlphaTrade Prediction")
+        st.subheader("AlphaTrade Prediction")
 
         if prediction == 1:
             st.success(
-                "🟢 BUY — Market expected to move UP"
+                "BUY — Market expected to move UP"
             )
         else:
             st.error(
-                "🔴 SELL — Market expected to move DOWN"
+                "SELL — Market expected to move DOWN"
             )
 
-        # Show recent stock data
-        st.subheader("📋 Recent Stock Data")
+        # ---------------- STOCK DATA ----------------
+
+        st.subheader("Recent Stock Data")
 
         st.dataframe(
             df.tail(),
-            use_container_width=True
+            width="stretch"
         )
 
     except Exception as e:
